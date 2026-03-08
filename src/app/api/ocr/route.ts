@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
-import Anthropic from "@anthropic-ai/sdk"
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+import { GoogleGenerativeAI } from "@google/generative-ai"
 
 export async function POST(req: NextRequest) {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json({ error: "ANTHROPIC_API_KEY não configurada" }, { status: 500 })
+  if (!process.env.GOOGLE_AI_API_KEY) {
+    return NextResponse.json({ error: "GOOGLE_AI_API_KEY não configurada" }, { status: 500 })
   }
 
   try {
@@ -20,50 +18,39 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Formato de imagem inválido" }, { status: 400 })
     }
 
-    const mediaType = matches[1] as "image/jpeg" | "image/png" | "image/gif" | "image/webp"
+    const mimeType = matches[1]
     const base64Data = matches[2]
 
-    const response = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1024,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: { type: "base64", media_type: mediaType, data: base64Data },
-            },
-            {
-              type: "text",
-              text: `Analise este cupom fiscal/nota fiscal/recibo e extraia os dados em JSON.
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY)
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
 
-Retorne APENAS o JSON, sem texto adicional, no formato:
+    const result = await model.generateContent([
+      {
+        inlineData: { mimeType, data: base64Data },
+      },
+      `Analise este cupom fiscal/nota fiscal/recibo brasileiro e extraia os dados.
+
+Retorne APENAS o JSON válido, sem markdown ou texto adicional:
 {
-  "amount": <valor total em número, ex: 45.90>,
+  "amount": <valor total pago como número, ex: 45.90>,
   "date": "<data no formato YYYY-MM-DD ou null>",
   "merchant": "<nome do estabelecimento ou null>",
-  "description": "<nome do estabelecimento ou descrição resumida>",
+  "description": "<nome resumido do estabelecimento>",
   "paymentMethod": "<PIX|Crédito|Débito|Dinheiro|Voucher ou null>",
-  "cnpj": "<CNPJ sem formatação ou null>",
-  "items": ["<item 1>", "<item 2>", ...]
+  "cnpj": "<apenas dígitos do CNPJ ou null>",
+  "items": ["<produto/serviço 1>", "<produto 2>"]
 }
 
-Regras:
-- amount deve ser o VALOR TOTAL pago (procure por TOTAL, VALOR TOTAL, TOTAL A PAGAR)
+Regras importantes:
+- amount: procure TOTAL, VALOR TOTAL, TOTAL A PAGAR (use vírgula como decimal brasileiro)
 - Se não encontrar algum campo, use null
-- items: liste os principais produtos/serviços (máximo 10)
-- date: converta para YYYY-MM-DD
-- Se for nota em português do Brasil, os valores usam vírgula como decimal`,
-            },
-          ],
-        },
-      ],
-    })
+- items: máximo 10 itens principais
+- date: converta DD/MM/YYYY para YYYY-MM-DD`,
+    ])
 
-    const text = response.content[0].type === "text" ? response.content[0].text : ""
+    const text = result.response.text()
 
-    // Extract JSON from response
+    // Extract JSON — Gemini sometimes wraps in markdown
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       return NextResponse.json({ error: "Não foi possível extrair dados do cupom" }, { status: 422 })

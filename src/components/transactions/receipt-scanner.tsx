@@ -90,8 +90,8 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
       setStep("result")
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro desconhecido"
-      if (msg.includes("ANTHROPIC_API_KEY")) {
-        setError("Configure a variável ANTHROPIC_API_KEY no servidor para usar o scanner.")
+      if (msg.includes("GOOGLE_AI_API_KEY")) {
+        setError("Configure a variável GOOGLE_AI_API_KEY no servidor para usar o scanner.")
       } else {
         setError(`Erro ao processar: ${msg}. Tente novamente com uma foto mais nítida.`)
       }
