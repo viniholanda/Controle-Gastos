@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest temp-app --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git --yes)",
+      "Bash(npx prisma init --datasource-provider postgresql)",
+      "Bash(npm run build)",
+      "Bash(xargs grep -l \"params: { id\")",
+      "Bash(npx prisma generate)",
+      "Bash(npm install @prisma/adapter-pg pg @types/pg)",
+      "Bash(for f in src/app/api/transactions/route.ts src/app/api/transactions/[id]/route.ts src/app/api/accounts/route.ts src/app/api/accounts/[id]/route.ts src/app/api/budgets/route.ts src/app/api/budgets/[id]/route.ts src/app/api/categories/route.ts src/app/api/merchants/route.ts src/app/api/tags/route.ts src/app/api/reports/route.ts src/app/api/export/route.ts src/app/api/notifications/route.ts src/app/api/workspace/route.ts src/app/api/dashboard/route.ts)",
+      "Bash(do)",
+      "Bash(sed -i -e \"s|import { auth } from \"\"@/lib/auth\"\"|import { getSession } from \"\"@/lib/session\"\"|g\" -e \"s|const session = await auth\\(\\)|const session = await getSession\\(\\)|g\" \"$f\")",
+      "Bash(done)",
+      "Bash(ls \"c:/Users/valen/Downloads/Controle Gastos/src/app/\\(auth\\)/\")",
+      "Bash(node -e \"const {PrismaPg} = require\\(''@prisma/adapter-pg''\\); console.log\\(Object.keys\\(PrismaPg.prototype || PrismaPg\\)\\)\")",
+      "Bash(node -e \":*)",
+      "Bash(gh auth status)"
+    ]
+  }
+}

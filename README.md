@@ -1,36 +1,163 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FinTrack — Expense Tracking System
 
-## Getting Started
+A modern, production-ready expense tracking system built with Next.js 14, TypeScript, Tailwind CSS, PostgreSQL, and Prisma.
 
-First, run the development server:
+## Features
+
+- **Fast data entry** — Quick-add modal with keyboard shortcuts (N, Ctrl+Enter)
+- **Smart categories** — Hierarchical categories with auto-suggest
+- **Multiple accounts** — Cash, bank, credit card, digital wallet
+- **Budgets** — Monthly budgets with progress indicators and alerts
+- **Reports** — Visual charts by category, merchant, and period
+- **Import** — CSV, Excel, OFX, QIF file import with preview
+- **Dark mode** — Full light/dark theme support
+- **PWA** — Installable as a mobile app
+- **Multi-currency** — BRL, USD, EUR support
+
+## Tech Stack
+
+- **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS
+- **UI Components**: Radix UI primitives with custom styling
+- **Database**: PostgreSQL with Prisma ORM
+- **Auth**: NextAuth.js v5 with credential providers
+- **Charts**: Recharts
+- **Forms**: React Hook Form + Zod validation
+- **State**: TanStack Query
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL 14+
+
+### 1. Clone and install
+
+```bash
+git clone <repo>
+cd controle-gastos
+npm install
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+```
+DATABASE_URL="postgresql://postgres:password@localhost:5432/controle_gastos"
+NEXTAUTH_SECRET="run: openssl rand -base64 32"
+NEXTAUTH_URL="http://localhost:3000"
+AUTH_SECRET="same as NEXTAUTH_SECRET"
+```
+
+### 3. Set up database
+
+```bash
+# Create the database (PostgreSQL)
+createdb controle_gastos
+
+# Run migrations
+npx prisma migrate dev --name init
+
+# Seed demo data
+npx prisma db seed
+```
+
+### 4. Run development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Demo credentials
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Email**: `demo@fintrack.app`
+- **Password**: `demo1234`
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/
+│   ├── (auth)/          # Login, register pages
+│   ├── (dashboard)/     # Main app pages
+│   │   ├── dashboard/   # Overview dashboard
+│   │   ├── transactions/ # Transaction list & management
+│   │   ├── budgets/     # Budget tracking
+│   │   ├── reports/     # Analytics & reports
+│   │   ├── import/      # File import wizard
+│   │   └── settings/    # App settings
+│   └── api/             # API routes
+├── components/
+│   ├── ui/              # Base UI components
+│   ├── transactions/    # Transaction-specific components
+│   ├── dashboard/       # Dashboard widgets
+│   └── layout/          # Layout components
+├── lib/
+│   ├── auth.ts          # NextAuth configuration
+│   ├── prisma.ts        # Database client
+│   ├── utils.ts         # Utility functions
+│   ├── validations.ts   # Zod schemas
+│   ├── audit.ts         # Audit logging
+│   └── workspace.ts     # Workspace helpers
+└── types/               # TypeScript type definitions
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Database
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Run migrations:
+```bash
+npx prisma migrate dev
+```
 
-## Deploy on Vercel
+View database:
+```bash
+npx prisma studio
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Testing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm test
+npm run test:coverage
+```
+
+## Production Build
+
+```bash
+npm run build
+npm start
+```
+
+## Deployment
+
+### Vercel (recommended)
+
+1. Push to GitHub
+2. Import in Vercel
+3. Add environment variables
+4. Deploy
+
+### Docker
+
+```bash
+docker build -t fintrack .
+docker run -p 3000:3000 fintrack
+```
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `N` | New transaction |
+| `Ctrl+Enter` | Save form |
+| `Escape` | Close modal |
+
+## License
+
+MIT
