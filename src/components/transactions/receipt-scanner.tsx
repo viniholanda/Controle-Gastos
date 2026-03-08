@@ -88,8 +88,13 @@ export function ReceiptScanner({ onResult, onClose }: Props) {
       const data = await processReceiptImage(imageSource, setProgress)
       setResult(data)
       setStep("result")
-    } catch {
-      setError("Erro ao processar a imagem. Tente novamente com uma foto mais nítida.")
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro desconhecido"
+      if (msg.includes("ANTHROPIC_API_KEY")) {
+        setError("Configure a variável ANTHROPIC_API_KEY no servidor para usar o scanner.")
+      } else {
+        setError(`Erro ao processar: ${msg}. Tente novamente com uma foto mais nítida.`)
+      }
       setStep("choose")
     }
   }
