@@ -39,6 +39,7 @@ export function TransactionModal({ open, editId, onClose }: Props) {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [showScanner, setShowScanner] = useState(false)
   const [dateInput, setDateInput] = useState("")
+  const [amountDisplay, setAmountDisplay] = useState("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
 
   const {
@@ -80,11 +81,12 @@ export function TransactionModal({ open, editId, onClose }: Props) {
 
   useEffect(() => {
     if (editData) {
+      const amt = Number(editData.amount)
       reset({
         type: editData.type,
         accountId: editData.accountId,
         categoryId: editData.categoryId ?? "",
-        amount: Number(editData.amount),
+        amount: amt,
         description: editData.description ?? "",
         notes: editData.notes ?? "",
         date: format(new Date(editData.date), "yyyy-MM-dd"),
@@ -93,6 +95,11 @@ export function TransactionModal({ open, editId, onClose }: Props) {
       })
       setSelectedTags(editData.tags?.map((t: any) => t.tagId) ?? [])
       setDateInput(format(new Date(editData.date), "yyyy-MM-dd"))
+      setAmountDisplay(
+        amt > 0
+          ? amt.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          : ""
+      )
     }
   }, [editData, reset])
 
@@ -128,7 +135,12 @@ export function TransactionModal({ open, editId, onClose }: Props) {
   })
 
   const handleReceiptResult = useCallback((data: ReceiptData) => {
-    if (data.amount) setValue("amount", data.amount)
+    if (data.amount) {
+      setValue("amount", data.amount)
+      setAmountDisplay(
+        data.amount.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      )
+    }
     if (data.date) {
       setValue("date", data.date)
       setDateInput(data.date)
@@ -142,12 +154,31 @@ export function TransactionModal({ open, editId, onClose }: Props) {
     toast.success("Dados do cupom preenchidos!")
   }, [setValue])
 
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Keep only digits
+    const digits = e.target.value.replace(/\D/g, "")
+    if (!digits) {
+      setAmountDisplay("")
+      setValue("amount", 0)
+      return
+    }
+    // Treat last 2 digits as cents: 12345 → 123,45
+    const cents = parseInt(digits, 10)
+    const value = cents / 100
+    setValue("amount", value)
+    // Format as Brazilian: 1.234,56
+    setAmountDisplay(
+      value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    )
+  }
+
   const handleClose = useCallback(() => {
     reset()
     setSelectedTags([])
     setShowAdvanced(false)
     setShowScanner(false)
     setDateInput("")
+    setAmountDisplay("")
     onClose()
   }, [reset, onClose])
 
@@ -237,11 +268,12 @@ export function TransactionModal({ open, editId, onClose }: Props) {
               R$
             </div>
             <input
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              inputMode="numeric"
               placeholder="0,00"
               autoFocus={!editId}
+              value={amountDisplay}
+              onChange={handleAmountChange}
               className={cn(
                 "w-full h-14 rounded-xl border-2 bg-transparent pl-12 pr-4 text-2xl font-bold tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors",
                 errors.amount ? "border-destructive" : "border-input",
@@ -249,7 +281,6 @@ export function TransactionModal({ open, editId, onClose }: Props) {
                 watchType === "EXPENSE" && "text-red-500",
                 watchType === "TRANSFER" && "text-blue-500",
               )}
-              {...register("amount", { valueAsNumber: true })}
             />
             {errors.amount && (
               <p className="mt-1 text-xs text-destructive">{errors.amount.message}</p>
