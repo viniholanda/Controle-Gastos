@@ -2,7 +2,24 @@ import { NextRequest, NextResponse } from "next/server"
 import { getSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
 import { getCurrentWorkspace } from "@/lib/workspace"
-import { startOfMonth, endOfMonth, startOfYear, subMonths, format } from "date-fns"
+import { startOfMonth, endOfMonth, startOfYear, endOfYear, startOfWeek, endOfWeek, startOfDay, endOfDay, subMonths, format } from "date-fns"
+
+function getPeriodRange(period: string, now: Date): { start: Date; end: Date } {
+  switch (period) {
+    case "today":
+      return { start: startOfDay(now), end: endOfDay(now) }
+    case "week":
+      return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) }
+    case "month":
+      return { start: startOfMonth(now), end: endOfMonth(now) }
+    case "year":
+      return { start: startOfYear(now), end: endOfYear(now) }
+    case "all":
+      return { start: new Date(2000, 0, 1), end: new Date(2099, 11, 31) }
+    default:
+      return { start: startOfMonth(now), end: endOfMonth(now) }
+  }
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,6 +30,8 @@ export async function GET(req: NextRequest) {
     if (!workspace) return NextResponse.json({ error: "No workspace" }, { status: 404 })
 
     const now = new Date()
+    const period = req.nextUrl.searchParams.get("period") ?? "month"
+    const { start: periodStart, end: periodEnd } = getPeriodRange(period, now)
     const monthStart = startOfMonth(now)
     const monthEnd = endOfMonth(now)
     const prevMonthStart = startOfMonth(subMonths(now, 1))
@@ -35,23 +54,23 @@ export async function GET(req: NextRequest) {
         select: { id: true, name: true, type: true, currentBalance: true, currency: true, color: true },
       }),
 
-      // Current month expenses
+      // Current period expenses
       prisma.transaction.aggregate({
         where: {
           workspaceId: workspace.id,
           type: "EXPENSE",
-          date: { gte: monthStart, lte: monthEnd },
+          date: { gte: periodStart, lte: periodEnd },
           isArchived: false,
         },
         _sum: { amount: true },
       }),
 
-      // Current month income
+      // Current period income
       prisma.transaction.aggregate({
         where: {
           workspaceId: workspace.id,
           type: "INCOME",
-          date: { gte: monthStart, lte: monthEnd },
+          date: { gte: periodStart, lte: periodEnd },
           isArchived: false,
         },
         _sum: { amount: true },
@@ -91,13 +110,13 @@ export async function GET(req: NextRequest) {
         take: 10,
       }),
 
-      // Top categories this month
+      // Top categories for selected period
       prisma.transaction.groupBy({
         by: ["categoryId"],
         where: {
           workspaceId: workspace.id,
           type: "EXPENSE",
-          date: { gte: monthStart, lte: monthEnd },
+          date: { gte: periodStart, lte: periodEnd },
           isArchived: false,
           categoryId: { not: null },
         },
@@ -157,7 +176,7 @@ export async function GET(req: NextRequest) {
             workspaceId: workspace.id,
             type: "EXPENSE",
             ...(budget.categoryId && { categoryId: budget.categoryId }),
-            date: { gte: monthStart, lte: monthEnd },
+            date: { gte: periodStart, lte: periodEnd },
             isArchived: false,
           },
           _sum: { amount: true },
@@ -179,6 +198,42 @@ export async function GET(req: NextRequest) {
     const currentExpenses = Number(currentMonthExpenses._sum.amount ?? 0)
     const currentIncome = Number(currentMonthIncome._sum.amount ?? 0)
 
+    // Balance evolution: last 12 months
+    // Start from current total balance and work backwards using monthly net
+    const balanceEvolution = await Promise.all(
+      Array.from({ length: 12 }, (_, i) => {
+        const d = subMonths(now, 11 - i)
+        const s = startOfMonth(d)
+        const e = endOfMonth(d)
+        return Promise.all([
+          prisma.transaction.aggregate({
+            where: { workspaceId: workspace.id, type: "EXPENSE", date: { gte: s, lte: e }, isArchived: false },
+            _sum: { amount: true },
+          }),
+          prisma.transaction.aggregate({
+            where: { workspaceId: workspace.id, type: "INCOME", date: { gte: s, lte: e }, isArchived: false },
+            _sum: { amount: true },
+          }),
+        ]).then(([exp, inc]) => ({
+          month: format(d, "MMM yy"),
+          expenses: Number(exp._sum.amount ?? 0),
+          income: Number(inc._sum.amount ?? 0),
+          net: Number(inc._sum.amount ?? 0) - Number(exp._sum.amount ?? 0),
+        }))
+      })
+    )
+
+    // Calculate balance at each month by working backwards from current balance
+    let runningBalance = totalBalance
+    const balanceEvolutionWithBalance = [...balanceEvolution].reverse().map((month, idx) => {
+      if (idx === 0) {
+        return { ...month, balance: runningBalance }
+      }
+      // Subtract the previous month's net to get what the balance was before
+      runningBalance -= balanceEvolution[balanceEvolution.length - idx].net
+      return { ...month, balance: runningBalance }
+    }).reverse()
+
     return NextResponse.json({
       totalBalance,
       accounts,
@@ -195,6 +250,8 @@ export async function GET(req: NextRequest) {
       topCategories: enrichedCategories,
       budgets: budgetProgress,
       monthlyTrend,
+      balanceEvolution: balanceEvolutionWithBalance,
+      period,
     })
   } catch (err) {
     console.error("Dashboard error:", err)

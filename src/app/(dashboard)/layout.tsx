@@ -4,10 +4,11 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, ArrowLeftRight, PiggyBank, BarChart3, Upload,
-  Settings, Menu, X, User, Plus, Moon, Sun
+  Settings, Menu, X, User, Plus, Moon, Sun, Search
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
+import { CommandPalette } from "@/components/command-palette"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -64,13 +65,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Botão adicionar rápido */}
-        <div className="px-4 py-4">
+        <div className="px-4 py-4 space-y-2">
           <Link href="/transactions?new=true">
             <Button size="lg" className="w-full gap-2">
               <Plus className="h-4 w-4" />
               Nova Transação
             </Button>
           </Link>
+          {/* Busca rápida */}
+          <button
+            onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+            className="flex w-full items-center gap-2 rounded-lg border border-input bg-background px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span className="flex-1 text-left">Buscar...</span>
+            <kbd className="hidden sm:inline-flex h-5 items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              ⌘K
+            </kbd>
+          </button>
         </div>
 
         {/* Navegação */}
@@ -147,6 +159,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
           <span className="text-lg font-bold">FinTrack</span>
           <div className="ml-auto flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+            >
+              <Search className="h-4 w-4" />
+            </Button>
             <Link href="/transactions?new=true">
               <Button size="sm">
                 <Plus className="h-4 w-4" />
@@ -160,6 +179,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+
+      {/* Paleta de comandos (Cmd+K / Ctrl+K) */}
+      <CommandPalette />
     </div>
   )
 }

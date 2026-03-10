@@ -14,7 +14,16 @@
       "Bash(ls \"c:/Users/valen/Downloads/Controle Gastos/src/app/\\(auth\\)/\")",
       "Bash(node -e \"const {PrismaPg} = require\\(''@prisma/adapter-pg''\\); console.log\\(Object.keys\\(PrismaPg.prototype || PrismaPg\\)\\)\")",
       "Bash(node -e \":*)",
-      "Bash(gh auth status)"
+      "Bash(gh auth status)",
+      "Bash(gh repo create Controle-Gastos --public --source=. --push)",
+      "Bash(vercel --version)",
+      "Bash(vercel whoami)",
+      "Bash(vercel --yes --prod)",
+      "Bash(npm list @anthropic-ai/sdk)",
+      "Bash(npm install @anthropic-ai/sdk)",
+      "Bash(npm uninstall @anthropic-ai/sdk)",
+      "Bash(npm install @google/generative-ai)",
+      "Bash(npm list @google/generative-ai)"
     ]
   }
 }

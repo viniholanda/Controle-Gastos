@@ -119,7 +119,31 @@ function TransactionsContent() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => { }}>
+          <Button variant="outline" size="sm" onClick={async () => {
+            try {
+              const params = new URLSearchParams({ format: "csv" })
+              if (search) params.set("search", search)
+              if (filters.type) params.set("type", filters.type)
+              if (filters.startDate) params.set("startDate", filters.startDate)
+              if (filters.endDate) params.set("endDate", filters.endDate)
+              if (filters.accountId) params.set("accountId", filters.accountId)
+              if (filters.categoryId) params.set("categoryId", filters.categoryId)
+              const res = await fetch(`/api/export?${params.toString()}`)
+              if (!res.ok) throw new Error("Falha ao exportar")
+              const blob = await res.blob()
+              const url = window.URL.createObjectURL(blob)
+              const a = document.createElement("a")
+              a.href = url
+              a.download = `fintrack-export-${new Date().toISOString().slice(0, 10)}.csv`
+              document.body.appendChild(a)
+              a.click()
+              a.remove()
+              window.URL.revokeObjectURL(url)
+              toast.success("Exportação concluída")
+            } catch {
+              toast.error("Falha ao exportar transações")
+            }
+          }}>
             <Download className="mr-2 h-4 w-4" />
             Exportar
           </Button>

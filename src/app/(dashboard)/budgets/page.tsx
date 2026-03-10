@@ -138,7 +138,7 @@ export default function BudgetsPage() {
       ) : (
         <div className="grid gap-4">
           {budgets.map((budget: any) => {
-            const spent = 0
+            const spent = Number(budget.spent ?? 0)
             const amount = Number(budget.amount)
             const percentage = amount > 0 ? Math.min((spent / amount) * 100, 100) : 0
             const isOver = spent > amount
